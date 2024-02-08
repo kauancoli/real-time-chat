@@ -20,7 +20,9 @@
     "paths": {
       "@/*": ["src/*"],
       "@pages/*": ["src/pages/index*"],
-      "@components/*": ["src/components/*"]
+      "@components/*": ["src/components/*"],
+      "@dtos/*": ["src/@dtos/*"],
+      "@router/*": ["src/router/*"]
     }
   },
   "include": ["src"],
