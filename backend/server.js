@@ -15,14 +15,18 @@ const SERVER_HOST = "localhost";
 const SERVER_PORT = 3000;
 
 io.on("connection", (socket) => {
-  console.log("Io has a new connection");
+  console.log(`User connected: ${socket.id}`);
+
+  socket.on("room", (data) => {
+    socket.join(data);
+  });
 
   socket.on("message", (data) => {
-    io.emit("message", data);
+    socket.to(data.room).emit("message", data);
   });
 
   socket.on("disconnect", () => {
-    console.log("Socket connection was disconnected");
+    console.log(`User disconnected: ${socket.id}`);
   });
 });
 
