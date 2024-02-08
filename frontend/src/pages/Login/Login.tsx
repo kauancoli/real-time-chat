@@ -47,7 +47,7 @@ export const Login = () => {
             </div>
             <button
               onClick={handleLogin}
-              className="bg-primary text-white font-bold p-2 rounded w-full"
+              className="bg-primary hover:bg-primaryHover text-white font-bold py-2 px-4 rounded"
             >
               Entrar
             </button>

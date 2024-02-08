@@ -1,5 +1,6 @@
 import { Props } from "@/@dtos/LoginProps/Props";
 import { MessageData } from "@/@dtos/Message/Message";
+import { PaperPlaneTilt } from "phosphor-react";
 import { useEffect, useState } from "react";
 import { v4 as uuid } from "uuid";
 
@@ -22,9 +23,12 @@ export const Chat = ({ socket, user, room }: Props) => {
 
     socket.emit("message", messageData);
 
+    if (messageData.message.trim() === "") return;
     setMessages((prevMessages) => [...prevMessages, messageData]);
+
     setCurrentMessage("");
   };
+
   useEffect(() => {
     const handleIncomingMessage = (messageData: MessageData) => {
       setMessages((prevMessages) => [...prevMessages, messageData]);
@@ -36,10 +40,11 @@ export const Chat = ({ socket, user, room }: Props) => {
       socket.off("message", handleIncomingMessage);
     };
   }, []);
+
   return (
     <div className="flex flex-row gap-56">
       <div className="">Menu Lateral</div>
-      <div className="flex flex-1 flex-col h-screen justify-between p-4">
+      <div className="flex flex-1 flex-col h-screen justify-between p-4 bg-slate-800">
         <div className="flex-1 overflow-y-auto">
           {messages.map((messageData, index) => (
             <div
@@ -73,14 +78,20 @@ export const Chat = ({ socket, user, room }: Props) => {
             </div>
           ))}
         </div>
-        <form className="flex items-center mt-4" onSubmit={handleFormSubmit}>
+        <form
+          className="flex items-center bg-dark py-2 px-4 rounded-2xl shadow-lg"
+          onSubmit={handleFormSubmit}
+        >
           <input
             type="text"
             value={currentMessage}
+            placeholder="Digite uma mensagem..."
             onChange={(e) => setCurrentMessage(e.target.value)}
-            className="border p-2 flex-1 mr-2"
+            className="rounded py-2 px-4 flex-1 mr-2 bg-transparent text-white"
           />
-          <button className="bg-blue-500 text-white p-2 rounded">Enviar</button>
+          <button className="p-2 rounded">
+            <PaperPlaneTilt color="#615EF0" size={24} />
+          </button>
         </form>
       </div>
       <div>Menu Lateral</div>
