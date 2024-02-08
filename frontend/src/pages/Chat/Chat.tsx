@@ -23,18 +23,20 @@ export const Chat = () => {
 
     socket.emit("message", messageData);
 
-    setMessages((prevMessages) => [...prevMessages, messageData]);
     setCurrentMessage("");
   };
 
   useEffect(() => {
-    socket.on("message", (messageData: MessageData) => {
+    const handleIncomingMessage = (messageData: MessageData) => {
       setMessages((prevMessages) => [...prevMessages, messageData]);
-    });
-    return () => {
-      socket.close();
     };
-  }, [messages]);
+
+    socket.on("message", handleIncomingMessage);
+
+    return () => {
+      socket.off("message", handleIncomingMessage);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-screen justify-between p-4">
