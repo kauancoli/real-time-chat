@@ -55,7 +55,7 @@ export const Chat = ({ socket, user, room }: Props) => {
             >
               <div className="flex items-start">
                 <div
-                  className={`flex items-center justify-center rounded-full w-10 h-10 mr-3 font-bold ${
+                  className={`flex items-center justify-center rounded-full w-10 h-10 mr-3 font-bold select-none ${
                     messageData.user === user ? "bg-primary" : "bg-gray-700"
                   }`}
                 >
@@ -87,7 +87,7 @@ export const Chat = ({ socket, user, room }: Props) => {
             value={currentMessage}
             placeholder="Digite uma mensagem..."
             onChange={(e) => setCurrentMessage(e.target.value)}
-            className="rounded py-2 px-4 flex-1 mr-2 bg-transparent text-white"
+            className="rounded py-2 px-4 flex-1 mr-2 bg-transparent text-white focus:outline-none"
           />
           <button className="p-2 rounded">
             <PaperPlaneTilt color="#615EF0" size={24} />
