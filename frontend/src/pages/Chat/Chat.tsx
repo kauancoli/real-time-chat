@@ -1,77 +1,117 @@
+import { Message, Room } from "@/@dtos";
 import { Props } from "@/@dtos/LoginProps/Props";
-import { MessageData } from "@/@dtos/Message/Message";
+
+import { api } from "@/config";
 import { PaperPlaneTilt } from "phosphor-react";
 import { useEffect, useState } from "react";
 import { v4 as uuid } from "uuid";
 
-export const Chat = ({ socket, user, room }: Props) => {
-  const [messages, setMessages] = useState<MessageData[]>([]);
+export const Chat = ({ socket, user }: Props) => {
+  const [content, setContent] = useState<Message[]>([]);
+  const [receiver, setReceiver] = useState(null);
   const [currentMessage, setCurrentMessage] = useState<string>("");
+
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [selectedRoom, setSelectedRoom] = useState<string>("");
+
   const [userId] = useState<string>(uuid());
+
   const minutes = new Date(Date.now()).getMinutes();
   const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
 
+  const getRoomMessages = async () => {
+    try {
+      const { data } = await api.get(`rooms?_embed=messages`);
+
+      setRooms(data);
+      setContent(data[0].messages);
+    } catch (error) {
+      console.error("Erro ao buscar salas", error);
+    }
+  };
+
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const messageData: MessageData = {
+    const contentData: Message = {
       id: userId,
-      message: currentMessage,
-      room: room,
-      user: user,
-      time: `${new Date(Date.now()).getHours()}:${formattedMinutes}`,
+      userName: user,
+      content: currentMessage,
+      timestamp: `${new Date(Date.now()).getHours()}:${formattedMinutes}`,
+      roomId: selectedRoom,
     };
 
-    socket.emit("message", messageData);
-
-    if (messageData.message.trim() === "") return;
-    setMessages((prevMessages) => [...prevMessages, messageData]);
+    socket.emit("message", contentData);
+    if (contentData.content.trim() === "") return;
+    setContent((prevMessages) => [...prevMessages, contentData]);
 
     setCurrentMessage("");
   };
 
+  const handleRoomClick = (roomId: string) => {
+    setSelectedRoom(roomId);
+    socket.emit("room", roomId);
+  };
+
   useEffect(() => {
-    const handleIncomingMessage = (messageData: MessageData) => {
-      setMessages((prevMessages) => [...prevMessages, messageData]);
-    };
-
-    socket.on("message", handleIncomingMessage);
-
-    return () => {
-      socket.off("message", handleIncomingMessage);
-    };
+    getRoomMessages();
   }, []);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("msg-receive", (data) => {
+        setReceiver(data);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    receiver && setContent((prev) => [...prev, receiver]);
+  }, [receiver]);
 
   return (
     <div className="flex flex-row gap-56">
       <div className="">Menu Lateral</div>
       <div className="flex flex-1 flex-col h-screen justify-between p-4 bg-slate-800">
+        {rooms.map((room) => (
+          <div key={room.id} className="mb-4">
+            <button
+              className={`text-white text-xl font-bold p-2 rounded ${
+                selectedRoom === room.id ? "bg-black" : "bg-gray-900"
+              }`}
+              onClick={() => handleRoomClick(room.id)}
+            >
+              {room.name}
+            </button>
+          </div>
+        ))}
+
         <div className="flex-1 overflow-y-auto">
-          {messages.map((messageData, index) => (
+          {content.map((message, index) => (
             <div
               key={index}
               className={`mb-6 text-white flex ${
-                messageData.user === user ? "justify-start" : "justify-end"
+                message.userName === user ? "justify-start" : "justify-end"
               }`}
             >
               <div className="flex items-start">
                 <div
                   className={`flex items-center justify-center rounded-full w-10 h-10 mr-3 font-bold select-none ${
-                    messageData.user === user ? "bg-primary" : "bg-gray-700"
+                    message.userName === user ? "bg-primary" : "bg-gray-700"
                   }`}
                 >
-                  {messageData.user.slice(0, 1).toUpperCase()}
+                  {message.userName.slice(0, 1).toUpperCase()}
                 </div>
                 <div className="flex flex-col items-start">
                   <div className="flex items-center mb-1 gap-2">
-                    <p className="text-base font-bold">{messageData.user}</p>
-                    <p className="text-xs text-gray-500">{messageData.time}</p>
+                    <p className="text-base font-bold">{message.userName}</p>
+                    <p className="text-xs text-gray-500">{message.timestamp}</p>
                   </div>
                   <div
                     className={`p-2 rounded ${
-                      messageData.user === user ? "bg-primary" : "bg-gray-700"
+                      message.userName === user ? "bg-primary" : "bg-gray-700"
                     }`}
                   >
-                    <p className="text-sm">{messageData.message}</p>
+                    <p className="text-sm">{message.content}</p>
                   </div>
                 </div>
               </div>

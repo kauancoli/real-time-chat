@@ -22,7 +22,8 @@
       "@pages/*": ["src/pages/index*"],
       "@components/*": ["src/components/*"],
       "@dtos/*": ["src/@dtos/*"],
-      "@router/*": ["src/router/*"]
+      "@router/*": ["src/router/*"],
+      "@config/*": ["src/config/*"]
     }
   },
   "include": ["src"],

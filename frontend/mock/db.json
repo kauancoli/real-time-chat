@@ -1,0 +1,46 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "userName": "admin",
+      "password": "admin"
+    }
+  ],
+
+  "rooms": [
+    {
+      "id": "1",
+      "name": "Sala 1"
+    },
+    {
+      "id": "2",
+      "name": "Sala 2"
+    }
+  ],
+
+  "messages": [
+    {
+      "id": "11",
+      "userName": "admin",
+      "content": "11",
+      "timestamp": "12:25",
+      "roomId": "1"
+    },
+
+    {
+      "id": "22",
+      "userName": "outro",
+      "content": "22",
+      "timestamp": "12:25",
+      "roomId": "1"
+    },
+
+    {
+      "id": "33",
+      "userName": "dads",
+      "content": "33",
+      "timestamp": "12:25",
+      "roomId": "2"
+    }
+  ]
+}
