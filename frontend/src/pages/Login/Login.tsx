@@ -1,18 +1,15 @@
 import { useState } from "react";
-import io from "socket.io-client";
-import { Chat } from "../Chat";
-
-const socket = io("http://localhost:3000");
-socket.on("connect", () => {
-  console.log("Connected to server");
-});
+import { Home } from "../Home";
 
 export const Login = () => {
   const [username, setUsername] = useState("");
   const [logged, setLogged] = useState(false);
 
   const handleLogin = () => {
-    if (username.trim() !== "") setLogged(true);
+    if (username.trim() !== "") {
+      setLogged(true);
+      localStorage.setItem("username", username);
+    }
   };
 
   return (
@@ -41,7 +38,7 @@ export const Login = () => {
           </div>
         </div>
       ) : (
-        <Chat socket={socket} user={username} />
+        <Home />
       )}
     </>
   );
