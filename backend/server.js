@@ -17,18 +17,18 @@ const SERVER_PORT = 3000;
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  socket.on("create-room", (newRoom) => {
-    io.emit("view-room", newRoom);
+  socket.on("create-room", (room) => {
+    io.emit("view-room", room);
   });
 
   socket.on("enter-room", (roomId) => {
     socket.join(roomId);
   });
 
-  socket.on("message", (data) => {
-    io.to(data.roomId).emit("message", data);
-    io.to(data.roomId).emit("msg-receive", data);
-    console.log(data);
+  socket.on("message", (msg) => {
+    io.to(msg.roomId).emit("message", msg);
+    io.emit("msg-received", msg);
+    console.log(msg);
   });
 
   socket.on("disconnect", () => {
