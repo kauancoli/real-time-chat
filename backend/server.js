@@ -6,7 +6,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socket(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "*",
     methods: ["GET", "POST"],
   },
 });
@@ -14,15 +14,43 @@ const io = socket(server, {
 const SERVER_HOST = "localhost";
 const SERVER_PORT = 3000;
 
-io.on("connection", (socket) => {
-  console.log(`User connected: ${socket.id}`);
+const activeUsers = [];
 
+io.on("connection", (socket) => {
   socket.on("create-room", (room) => {
     io.emit("view-room", room);
   });
 
+  socket.on("update-room", (room) => {
+    io.emit("view-room", room);
+  });
+
+  socket.on("delete-room", (roomId) => {
+    io.emit("delete-room", roomId);
+  });
+
   socket.on("enter-room", (roomId) => {
     socket.join(roomId);
+  });
+
+  socket.on("login", (userData) => {
+    activeUsers.push({
+      id: userData.id,
+      userName: userData.userName,
+    });
+
+    io.emit("active-users", activeUsers);
+  });
+
+  socket.on("logout", (userData) => {
+    const userId = userData.userId;
+    const index = activeUsers.findIndex((user) => user.id === userId);
+
+    if (index !== -1) {
+      activeUsers.splice(index, 1);
+    }
+
+    io.emit("active-users", activeUsers);
   });
 
   socket.on("message", (msg) => {
@@ -32,7 +60,8 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log(`User disconnected: ${socket.id}`);
+    console.log(`user disconnected ${socket.id}`);
+    io.emit("active-users", activeUsers);
   });
 });
 
