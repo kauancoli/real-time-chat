@@ -20,11 +20,13 @@ export const Chat = ({ socket, selectedRoom, msgs }: ChatProps) => {
   const [currentMessage, setCurrentMessage] = useState<string>("");
 
   const [room, setRoom] = useState<Room[]>([]);
+  const [roomChange, setRoomChange] = useState<string>("");
 
   const minutes = new Date(Date.now()).getMinutes();
   const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
 
-  const user = localStorage.getItem("username");
+  const user = sessionStorage.getItem("userName");
+  const roomName = room.filter((r) => r.id === selectedRoom).map((r) => r.name);
 
   const getRooms = async () => {
     setLoading(true);
@@ -37,6 +39,27 @@ export const Chat = ({ socket, selectedRoom, msgs }: ChatProps) => {
     } catch (error) {
       console.error("Erro ao buscar salas", error);
       setLoading(false);
+    }
+  };
+
+  const changeRoomName = async (roomId: string) => {
+    try {
+      if (roomChange !== "") {
+        const updatedRoom = await api.put(`rooms/${roomId}`, {
+          id: roomId,
+          name: roomChange,
+        });
+
+        setRoom((prevRooms) =>
+          prevRooms.map((r) =>
+            r.id === roomId ? { ...r, name: updatedRoom.data.name } : r
+          )
+        );
+
+        socket.emit("update-room", updatedRoom.data);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar salas", error);
     }
   };
 
@@ -81,22 +104,37 @@ export const Chat = ({ socket, selectedRoom, msgs }: ChatProps) => {
 
   useEffect(() => {
     getRooms();
-  }, []);
+
+    socket.on("view-room", (room) => {
+      setRoom((prevRooms) => {
+        if (!prevRooms.some((r) => r.id === room.id)) {
+          return [...prevRooms, room];
+        }
+        return prevRooms;
+      });
+    });
+
+    return () => {
+      socket.off("view-room");
+    };
+  }, [socket]);
 
   return (
     <div className="flex flex-1 flex-col justify-between p-4 bg-slate-800 rounded-lg">
       {loading && <Loading />}
 
       {selectedRoom ? (
-        <div className="navbar bg-background rounded-lg">
-          <div className="w-10 rounded-full">
-            <img
-              alt="Tailwind CSS Navbar component"
-              src="https://daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg"
-            />
-          </div>
-          <div className="p-4 font-bold text-lg text-white">
-            {room.filter((r) => r.id === selectedRoom).map((r) => r.name)}
+        <div className="navbar bg-background rounded-lg px-8 justify-between cursor-pointer">
+          <div>
+            <div className="avatar">
+              <div className="w-10 rounded-full">
+                <img
+                  alt="Tailwind CSS Navbar component"
+                  src="https://daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg"
+                />
+              </div>
+            </div>
+            <div className="p-4 font-bold text-lg text-white">{roomName}</div>
           </div>
 
           {/* <div className="p-4 font-bold text-sm text-white">
@@ -131,13 +169,51 @@ export const Chat = ({ socket, selectedRoom, msgs }: ChatProps) => {
                 className="menu menu-sm dropdown-content mt-2 z-[1] p-2 shadow bg-base-100 rounded-box w-32"
               >
                 <li>
-                  <a>Homepage</a>
+                  <a
+                    className="p-2"
+                    onClick={() =>
+                      (
+                        document.getElementById(
+                          `room-modal-${selectedRoom}`
+                        ) as HTMLDialogElement
+                      ).showModal()
+                    }
+                  >
+                    Alterar Nome
+                  </a>
                 </li>
+
+                <dialog id={`room-modal-${selectedRoom}`} className="modal">
+                  <div className="modal-box">
+                    <div className="flex flex-col gap-8">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-2xl">{roomName}</h3>
+                        <button
+                          className="btn"
+                          onClick={() => changeRoomName(selectedRoom)}
+                        >
+                          Alterar Nome
+                        </button>
+                      </div>
+
+                      <input
+                        type="text"
+                        onChange={(e) => setRoomChange(e.target.value)}
+                        className="rounded py-2 px-4 flex-1 mr-2 bg-background text-white focus:outline-none text-sm"
+                        placeholder="Digite um novo nome..."
+                      />
+                    </div>
+
+                    <div className="modal-action">
+                      <form method="dialog">
+                        <button className="btn">Fechar</button>
+                      </form>
+                    </div>
+                  </div>
+                </dialog>
+
                 <li>
-                  <a>Portfolio</a>
-                </li>
-                <li>
-                  <a>About</a>
+                  <a>Sair do Chat</a>
                 </li>
               </ul>
             </div>
@@ -149,38 +225,37 @@ export const Chat = ({ socket, selectedRoom, msgs }: ChatProps) => {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-16 mt-5">
+      <div className="flex-1 overflow-y-auto px-16 py-4 mt-5">
         {content
           .filter((message) => message.roomId === selectedRoom)
           .map((message, index) => (
             <div
               key={index}
-              className={`mb-6 text-white flex ${
-                message.userName === user ? "justify-start" : "justify-end"
+              className={`chat ${
+                message.userName === user ? "chat-start" : "chat-end"
               }`}
             >
-              <div className="flex items-start">
+              <div className={`chat-image`}>
                 <div
-                  className={`flex items-center justify-center rounded-full w-10 h-10 mr-3 font-bold select-none ${
+                  className={`w-10 h-10 font-bold rounded-full text-lg flex justify-center items-center ${
                     message.userName === user ? "bg-primary" : "bg-gray-700"
                   }`}
                 >
                   {message.userName.slice(0, 1).toUpperCase()}
                 </div>
-                <div className="flex flex-col items-start">
-                  <div className="flex items-center mb-1 gap-2">
-                    <p className="text-base font-bold">{message.userName}</p>
-                    <p className="text-xs text-gray-500">{message.timestamp}</p>
-                  </div>
+              </div>
 
-                  <div
-                    className={`p-2 rounded ${
-                      message.userName === user ? "bg-primary" : "bg-gray-700"
-                    }`}
-                  >
-                    <p className="text-sm">{message.content}</p>
-                  </div>
-                </div>
+              <div className="chat-header flex gap-2 items-center">
+                {message.userName}
+                <time className="text-xs opacity-50">{message.timestamp}</time>
+              </div>
+
+              <div
+                className={`chat-bubble ${
+                  message.userName === user ? "bg-primary" : "bg-gray-700"
+                }`}
+              >
+                {message.content}
               </div>
             </div>
           ))}
