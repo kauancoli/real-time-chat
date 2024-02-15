@@ -23,7 +23,8 @@
       "@components/*": ["src/components/*"],
       "@dtos/*": ["src/@dtos/*"],
       "@router/*": ["src/router/*"],
-      "@config/*": ["src/config/*"]
+      "@config/*": ["src/config/*"],
+      "@contexts/*": ["src/contexts/*"]
     }
   },
   "include": ["src"],

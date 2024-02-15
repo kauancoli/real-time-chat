@@ -3,17 +3,19 @@ import { Loading } from "@/components/Loading";
 import { MessageInput } from "@/components/MessageInput";
 
 import { api } from "@/config";
+import { useAuth, useSocket } from "@/contexts";
 import { useEffect, useState } from "react";
-import { Socket } from "socket.io-client";
 import { v4 as uuid } from "uuid";
 
 type ChatProps = {
-  socket: Socket;
   selectedRoom: string;
   msgs: Message[];
 };
 
-export const Chat = ({ socket, selectedRoom, msgs }: ChatProps) => {
+export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
+  const { socket } = useSocket();
+  const { user } = useAuth();
+
   const [loading, setLoading] = useState(false);
 
   const [content, setContent] = useState<Message[]>([]);
@@ -25,7 +27,6 @@ export const Chat = ({ socket, selectedRoom, msgs }: ChatProps) => {
   const minutes = new Date(Date.now()).getMinutes();
   const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
 
-  const user = sessionStorage.getItem("userName");
   const roomName = room.filter((r) => r.id === selectedRoom).map((r) => r.name);
 
   const getRooms = async () => {
@@ -72,7 +73,7 @@ export const Chat = ({ socket, selectedRoom, msgs }: ChatProps) => {
     try {
       const response = await api.post("messages", {
         id: uuid(),
-        userName: user,
+        userName: user.userName,
         content: currentMessage,
         timestamp: `${new Date(Date.now()).getHours()}:${formattedMinutes}`,
         roomId: selectedRoom,
@@ -232,13 +233,15 @@ export const Chat = ({ socket, selectedRoom, msgs }: ChatProps) => {
             <div
               key={index}
               className={`chat ${
-                message.userName === user ? "chat-start" : "chat-end"
+                message.userName === user.userName ? "chat-start" : "chat-end"
               }`}
             >
               <div className={`chat-image`}>
                 <div
                   className={`w-10 h-10 font-bold rounded-full text-lg flex justify-center items-center ${
-                    message.userName === user ? "bg-primary" : "bg-gray-700"
+                    message.userName === user.userName
+                      ? "bg-primary"
+                      : "bg-gray-700"
                   }`}
                 >
                   {message.userName.slice(0, 1).toUpperCase()}
@@ -252,7 +255,9 @@ export const Chat = ({ socket, selectedRoom, msgs }: ChatProps) => {
 
               <div
                 className={`chat-bubble ${
-                  message.userName === user ? "bg-primary" : "bg-gray-700"
+                  message.userName === user.userName
+                    ? "bg-primary"
+                    : "bg-gray-700"
                 }`}
               >
                 {message.content}

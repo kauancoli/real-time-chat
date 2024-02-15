@@ -1,38 +1,41 @@
+import { FormData } from "@/@dtos";
+import { Loading } from "@/components";
 import { api } from "@/config";
-import { useState } from "react";
-import { useNavigate } from "react-router";
-import { Socket } from "socket.io-client";
+import { useAuth } from "@/contexts";
+import React, { useState } from "react";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { ForgotPassword } from "./ForgotPassword";
+import { Register } from "./Register";
 
-type LoginProps = {
-  socket: Socket;
-};
-
-export const Login = ({ socket }: LoginProps) => {
-  const [loading, setLoading] = useState(false);
-
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-
+export const Login: React.FC = () => {
+  const { setUser } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
+  const [tabs, setTabs] = useState<string>("Login");
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid },
+  } = useForm<FormData>({ mode: "onChange" });
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const onSubmit: SubmitHandler<FormData> = async (data) => {
     setLoading(true);
     try {
       const response = await api.get(
-        `users?userName=${username}&password=${password}`
+        `users?userName=${data.name}&password=${data.password}`
       );
 
       const userData = response.data[0];
       if (userData) {
-        socket.emit("login", userData);
-        sessionStorage.setItem(
-          "user",
-          JSON.stringify({
-            id: userData.id,
-            userName: userData.userName,
-          })
-        );
+        setUser({
+          id: userData.id,
+          userName: userData.userName,
+          email: userData.email,
+        });
         navigate("/");
       } else {
         setError("Usuário ou senha inválidos");
@@ -45,36 +48,90 @@ export const Login = ({ socket }: LoginProps) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-2xl font-bold mb-4 text-white">
-        Bem-vindo ao ChatApp!
-      </h1>
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Usuário"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="rounded border-2 p-2 text-base"
-        />
+    <div className="flex flex-col items-center justify-center h-screen bg-dark">
+      {loading && <Loading />}
+
+      <div className="bg-background p-8 rounded shadow-md w-96">
+        {tabs === "Login" && (
+          <>
+            <h1 className="text-2xl font-bold mb-4 text-white">
+              Logar no ChatApp!
+            </h1>
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <div className="mb-4">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-semibold text-slate-400"
+                >
+                  Usuário
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  placeholder="Digite seu nome de usuário"
+                  {...register("name", {
+                    required: "Usuário obrigatório",
+                  })}
+                  className="rounded border-2 p-2 w-full mt-1"
+                />
+                {errors.name && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.name.message}
+                  </p>
+                )}
+              </div>
+              <div className="mb-4">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-semibold text-slate-400"
+                >
+                  Senha
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="Digite sua Senha"
+                  {...register("password", { required: "Senha obrigatória" })}
+                  className="rounded border-2 p-2 w-full mt-1"
+                />
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+              {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+              <div className="flex gap-2">
+                <button
+                  className="bg-gray-500 text-white font-bold py-2 px-4 rounded hover:bg-gray-600"
+                  onClick={() => setTabs("Register")}
+                >
+                  Cadastro
+                </button>
+                <button
+                  type="submit"
+                  disabled={!isValid}
+                  className="bg-primary text-white font-bold py-2 px-4 rounded hover:bg-primaryHover disabled:opacity-50 disabled:hover:bg-primary"
+                >
+                  Entrar
+                </button>
+              </div>
+              <div className="mt-3">
+                <button
+                  onClick={() => setTabs("Forgot_Password")}
+                  className="text-slate-400 hover:text-slate-200 opacity-40"
+                >
+                  Esqueceu a senha?
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+
+        {tabs === "Register" && <Register setTabs={setTabs} />}
+
+        {tabs === "Forgot_Password" && <ForgotPassword setTabs={setTabs} />}
       </div>
-      <div className="mb-4">
-        <input
-          type="password"
-          placeholder="Senha"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="rounded border-2 p-2 text-base"
-        />
-      </div>
-      {error && <p className="text-red-500">{error}</p>}
-      <button
-        onClick={handleLogin}
-        disabled={!username || !password}
-        className="btn text-white font-bold py-2 px-4 rounded"
-      >
-        Entrar
-      </button>
     </div>
   );
 };

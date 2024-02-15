@@ -1,37 +1,31 @@
 import { Message, Room, User } from "@/@dtos";
-import { CreateRoom } from "@/components";
+import { CreateRoom, Loading } from "@/components";
 import { api } from "@/config";
+import { useAuth, useSocket } from "@/contexts";
 import { MagnifyingGlass } from "phosphor-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
-import { Socket } from "socket.io-client";
 import { v4 as uuid } from "uuid";
 import { Chat } from "../Chat";
 
-type HomeProps = {
-  socket: Socket;
-};
+export const Home = () => {
+  const { socket } = useSocket();
+  const { user } = useAuth();
 
-export const Home = ({ socket }: HomeProps) => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const [newRoomName, setNewRoomName] = useState("");
   const [rooms, setRooms] = useState<Room[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<string>("");
-  const [activeUsers, setActiveUsers] = useState<Omit<User[], "password">>([]);
 
   const [content, setContent] = useState<Message[]>([]);
 
-  const user: Omit<User, "password"> = sessionStorage.getItem("user")
-    ? JSON.parse(sessionStorage.getItem("user"))
-    : navigate("/login");
-
   const handleLogout = () => {
-    socket.emit("logout", {
-      id: user.id,
-      userName: user.userName,
-    });
+    try {
+      localStorage.removeItem("user");
+      window.location.reload();
+    } catch (error) {
+      console.error("Erro ao deslogar", error);
+    }
   };
 
   const handleCreateRoom = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -46,11 +40,6 @@ export const Home = ({ socket }: HomeProps) => {
       const room: Room = response.data;
 
       socket.emit("create-room", room);
-
-      if (!rooms.find((room) => room.id === room.id)) {
-        socket.emit("create-room", room);
-        setRooms((prevRooms) => [...prevRooms, room]);
-      }
 
       setLoading(false);
       setNewRoomName("");
@@ -168,24 +157,9 @@ export const Home = ({ socket }: HomeProps) => {
     };
   }, [socket]);
 
-  useEffect(() => {
-    const activeUserListener = (activeUsers: User[]) => {
-      const uniqueUsers = activeUsers.filter(
-        (user, index, self) => index === self.findIndex((u) => u.id === user.id)
-      );
-
-      setActiveUsers(uniqueUsers);
-    };
-
-    socket.on("active-users", activeUserListener);
-
-    return () => {
-      socket.off("active-users", activeUserListener);
-    };
-  }, [socket]);
-
   return (
     <div className="flex flex-row gap-8 p-8 h-screen w-screen">
+      {loading && <Loading />}
       {/* Left Side */}
       <div className="flex flex-col gap-8 p-4 bg-dark rounded-lg">
         <div className="flex items-center justify-between">
@@ -263,7 +237,9 @@ export const Home = ({ socket }: HomeProps) => {
               </dialog>
 
               <li>
-                <a className="p-2">Deslogar</a>
+                <a className="p-2" onClick={handleLogout}>
+                  Deslogar
+                </a>
               </li>
             </ul>
           </div>
@@ -277,22 +253,6 @@ export const Home = ({ socket }: HomeProps) => {
             onChange={searchRoom}
             className="rounded-full py-2 px-4 flex-1 mr-2 bg-transparent text-white focus:outline-none text-base"
           />
-        </div>
-
-        <div className="divider">Usuario Logados</div>
-        <div>
-          {activeUsers
-            .filter((us) => us.id !== user.id)
-            .map((us) => (
-              <div key={us.id} className="flex items-center gap-2">
-                <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-full mr-3 font-bold select-none bg-primary text-white`}
-                >
-                  {us.userName.slice(0, 1).toUpperCase()}
-                </div>
-                <span>{us.userName}</span>
-              </div>
-            ))}
         </div>
 
         <div className="divider">Salas</div>
@@ -376,7 +336,7 @@ export const Home = ({ socket }: HomeProps) => {
       {/* Left Side */}
 
       {/* Mid */}
-      <Chat socket={socket} selectedRoom={selectedRoom} msgs={content} />
+      <Chat selectedRoom={selectedRoom} msgs={content} />
       {/* Mid Side */}
 
       {/* Right Side */}
