@@ -23,6 +23,10 @@ Este é um aplicativo de mensagens de texto em tempo real, desenvolvido com Node
   - Comunicação em tempo real usando Socket.IO.
   - Suporte a atualização e exclusão de salas via sockets.
 
+- **Conta de administrador**
+  - Login: "admin"
+  - Senha: "admin"
+
 - **Tecnologias Utilizadas:**
   - Frontend:
     - Vite 
