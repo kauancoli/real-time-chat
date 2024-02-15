@@ -14,8 +14,6 @@ const io = socket(server, {
 const SERVER_HOST = "localhost";
 const SERVER_PORT = 3000;
 
-const activeUsers = [];
-
 io.on("connection", (socket) => {
   socket.on("create-room", (room) => {
     io.emit("view-room", room);
@@ -33,26 +31,6 @@ io.on("connection", (socket) => {
     socket.join(roomId);
   });
 
-  socket.on("login", (userData) => {
-    activeUsers.push({
-      id: userData.id,
-      userName: userData.userName,
-    });
-
-    io.emit("active-users", activeUsers);
-  });
-
-  socket.on("logout", (userData) => {
-    const userId = userData.userId;
-    const index = activeUsers.findIndex((user) => user.id === userId);
-
-    if (index !== -1) {
-      activeUsers.splice(index, 1);
-    }
-
-    io.emit("active-users", activeUsers);
-  });
-
   socket.on("message", (msg) => {
     io.to(msg.roomId).emit("message", msg);
     io.emit("msg-received", msg);
@@ -61,7 +39,6 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log(`user disconnected ${socket.id}`);
-    io.emit("active-users", activeUsers);
   });
 });
 
