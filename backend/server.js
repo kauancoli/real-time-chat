@@ -11,8 +11,7 @@ const io = socket(server, {
   },
 });
 
-const SERVER_HOST = "localhost";
-const SERVER_PORT = 3000;
+const port = process.env.PORT || 3000;
 
 io.on("connection", (socket) => {
   socket.on("create-room", (room) => {
@@ -34,7 +33,6 @@ io.on("connection", (socket) => {
   socket.on("message", (msg) => {
     io.to(msg.roomId).emit("message", msg);
     io.emit("msg-received", msg);
-    console.log(msg);
   });
 
   socket.on("disconnect", () => {
@@ -42,6 +40,6 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(SERVER_PORT, SERVER_HOST, () => {
-  console.log(`Server is running at http://${SERVER_HOST}:${SERVER_PORT}`);
+server.listen(port, () => {
+  console.log(`Server is running at: ${port}`);
 });
