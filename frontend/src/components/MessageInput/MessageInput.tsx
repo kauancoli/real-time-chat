@@ -26,7 +26,7 @@ export function MessageInput({
         onChange={(e) => setMsg(e.target.value)}
         className="rounded py-2 px-4 flex-1 mr-2 bg-transparent text-white focus:outline-none text-sm"
       />
-      <button className="p-2 rounded" disabled={!roomId}>
+      <button className="p-2 rounded" disabled={!roomId || !msg}>
         <PaperPlaneTilt color="#615EF0" size={24} />
       </button>
     </form>

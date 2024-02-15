@@ -22,7 +22,8 @@ export const Login: React.FC = () => {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const onSubmit: SubmitHandler<FormData> = async (data) => {
+  const onSubmit: SubmitHandler<FormData> = async (data, e) => {
+    e.preventDefault();
     setLoading(true);
     try {
       const response = await api.get(
@@ -103,17 +104,17 @@ export const Login: React.FC = () => {
               {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
               <div className="flex gap-2">
                 <button
-                  className="bg-gray-500 text-white font-bold py-2 px-4 rounded hover:bg-gray-600"
-                  onClick={() => setTabs("Register")}
-                >
-                  Cadastro
-                </button>
-                <button
                   type="submit"
                   disabled={!isValid}
                   className="bg-primary text-white font-bold py-2 px-4 rounded hover:bg-primaryHover disabled:opacity-50 disabled:hover:bg-primary"
                 >
                   Entrar
+                </button>
+                <button
+                  className="bg-gray-500 text-white font-bold py-2 px-4 rounded hover:bg-gray-600"
+                  onClick={() => setTabs("Register")}
+                >
+                  Cadastro
                 </button>
               </div>
               <div className="mt-3">

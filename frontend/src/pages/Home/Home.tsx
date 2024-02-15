@@ -1,8 +1,8 @@
-import { Message, Room, User } from "@/@dtos";
+import { Message, Room } from "@/@dtos";
 import { CreateRoom, Loading } from "@/components";
 import { api } from "@/config";
 import { useAuth, useSocket } from "@/contexts";
-import { MagnifyingGlass } from "phosphor-react";
+import { Lock, MagnifyingGlass } from "phosphor-react";
 import { useEffect, useState } from "react";
 import { v4 as uuid } from "uuid";
 import { Chat } from "../Chat";
@@ -14,6 +14,7 @@ export const Home = () => {
   const [loading, setLoading] = useState(false);
 
   const [newRoomName, setNewRoomName] = useState("");
+  const [newRoomPass, setNewRoomPass] = useState("");
   const [rooms, setRooms] = useState<Room[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<string>("");
 
@@ -35,6 +36,8 @@ export const Home = () => {
       const response = await api.post("rooms", {
         id: uuid(),
         name: newRoomName,
+        userId: user.id,
+        password: newRoomPass,
       });
 
       const room: Room = response.data;
@@ -43,6 +46,7 @@ export const Home = () => {
 
       setLoading(false);
       setNewRoomName("");
+      setNewRoomPass("");
     } catch (error) {
       setLoading(false);
       console.error("Erro ao criar a sala", error);
@@ -95,51 +99,53 @@ export const Home = () => {
   };
 
   const handleRoomClick = (roomId: string) => {
-    setSelectedRoom(roomId);
-    socket.emit("enter-room", roomId);
+    const room = rooms.find((r) => r.id === roomId);
+
+    if (room.userId === user.id || user.id === "1") {
+      setSelectedRoom(roomId);
+      socket.emit("enter-room", roomId);
+      return;
+    }
+
+    if (room) {
+      if (room.password) {
+        const enteredPassword = prompt("Digite a senha da sala:");
+        if (enteredPassword !== room.password) {
+          alert("Senha incorreta. Tente novamente.");
+          return;
+        }
+      }
+
+      setSelectedRoom(roomId);
+      socket.emit("enter-room", roomId);
+    }
   };
 
   useEffect(() => {
-    const roomCreatedListener = (room) => {
+    const roomCreated = (room: Room) => {
       setRooms((prevRooms) => [...prevRooms, room]);
     };
 
-    socket.on("create-room", roomCreatedListener);
-
-    return () => {
-      socket.off("create-room", roomCreatedListener);
-    };
-  }, [socket, rooms]);
-
-  useEffect(() => {
     const roomDeletedListener = (roomId: string) => {
       setRooms((prevRooms) => prevRooms.filter((room) => room.id !== roomId));
     };
 
-    socket.on("delete-room", roomDeletedListener);
-
-    return () => {
-      socket.off("delete-room", roomDeletedListener);
-    };
-  }, [socket, rooms]);
-
-  useEffect(() => {
     const roomCreatedListener = (room: Room) => {
       if (!rooms.find((r) => r.id === room.id)) {
         setRooms((prevRooms) => [...prevRooms, room]);
       }
     };
 
+    socket.on("create-room", roomCreated);
+    socket.on("delete-room", roomDeletedListener);
     socket.on("view-room", roomCreatedListener);
 
     return () => {
+      socket.off("create-room", roomCreated);
+      socket.off("delete-room", roomDeletedListener);
       socket.off("view-room", roomCreatedListener);
     };
-  }, [rooms, socket]);
-
-  useEffect(() => {
-    getRoomMessages();
-  }, []);
+  }, [socket, rooms]);
 
   useEffect(() => {
     socket.on("view-room", (room: Room) => {
@@ -157,8 +163,12 @@ export const Home = () => {
     };
   }, [socket]);
 
+  useEffect(() => {
+    getRoomMessages();
+  }, []);
+
   return (
-    <div className="flex flex-row gap-8 p-8 h-screen w-screen">
+    <div className="flex flex-row gap-8 p-16 h-screen w-screen">
       {loading && <Loading />}
       {/* Left Side */}
       <div className="flex flex-col gap-8 p-4 bg-dark rounded-lg">
@@ -208,35 +218,6 @@ export const Home = () => {
               className="menu menu-sm dropdown-content mt-1 z-[1] p-2 shadow bg-base-100 rounded-box w-36"
             >
               <li>
-                <a
-                  className="p-2"
-                  onClick={() =>
-                    (
-                      document.getElementById(
-                        "profile-modal"
-                      ) as HTMLDialogElement
-                    ).showModal()
-                  }
-                >
-                  Perfil
-                </a>
-              </li>
-
-              <dialog id="profile-modal" className="modal">
-                <div className="modal-box">
-                  <h3 className="font-bold text-lg">Olá {user.userName}!</h3>
-                  <p className="py-4">
-                    Pressione ESC para fechar a janela de perfil.
-                  </p>
-                  <div className="modal-action">
-                    <form method="dialog">
-                      <button className="btn">Fechar</button>
-                    </form>
-                  </div>
-                </div>
-              </dialog>
-
-              <li>
                 <a className="p-2" onClick={handleLogout}>
                   Deslogar
                 </a>
@@ -261,43 +242,61 @@ export const Home = () => {
           {rooms.map((room) => (
             <div key={room.id}>
               <div
-                className={`flex justify-between btn ${
+                className={`rounded-lg px-4 py-1 text-sm text-white ${
                   selectedRoom === room.id ? "bg-primary" : "bg-background"
                 }`}
-                onClick={() => handleRoomClick(room.id)}
               >
-                <button className={`flex justify-start items-center border-0`}>
-                  <div className="avatar offline mr-2">
-                    <div className="w-8 rounded-full">
-                      <img src="https://daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg" />
-                    </div>
-                  </div>
-                  {room.name}
-                </button>
-
-                <div
-                  className="p-2"
-                  onClick={() =>
-                    (
-                      document.getElementById(
-                        `modal-${room.id}`
-                      ) as HTMLDialogElement
-                    ).showModal()
-                  }
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    className="inline-block w-6 h-6 stroke-current"
+                <div className="flex items-center">
+                  <button
+                    className={`flex items-center border-0 w-full gap-1`}
+                    onClick={() => handleRoomClick(room.id)}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    ></path>
-                  </svg>
+                    {room.userId === user.id && (
+                      <span className="text-xs mr-2">👑</span>
+                    )}
+                    {room.password && (
+                      <span className="text-xs mr-2">
+                        <Lock size={14} />
+                      </span>
+                    )}
+                    <div className="mr-2">
+                      <div
+                        className={`w-8 h-8 font-bold rounded-full text-lg flex justify-center items-center bg-white text-dark`}
+                      >
+                        {room.name ? room.name.slice(0, 1).toUpperCase() : ""}
+                      </div>
+                    </div>
+                    {room.name}
+                  </button>
+
+                  {(room.userId === user.id ||
+                    user.id === "1" ||
+                    user.userName === "admin") && (
+                    <div
+                      className="p-2 cursor-pointer"
+                      onClick={() =>
+                        (
+                          document.getElementById(
+                            `modal-${room.id}`
+                          ) as HTMLDialogElement
+                        ).showModal()
+                      }
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        className="inline-block w-6 h-6 stroke-current"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M6 18L18 6M6 6l12 12"
+                        ></path>
+                      </svg>
+                    </div>
+                  )}
                 </div>
               </div>
               <dialog id={`modal-${room.id}`} className="modal cursor-default">
@@ -308,13 +307,13 @@ export const Home = () => {
                   </h3>
 
                   <form method="dialog" className="flex justify-center gap-4">
-                    <button className="btn">Cancelar</button>
                     <button
                       className="btn btn-error"
                       onClick={() => handleDeleteRoom(room.id)}
                     >
                       Deletar
                     </button>
+                    <button className="btn">Cancelar</button>
                   </form>
                 </div>
               </dialog>
@@ -329,19 +328,15 @@ export const Home = () => {
             setRoomName={setNewRoomName}
             handleCreateRoom={handleCreateRoom}
             roomName={newRoomName}
+            roomPass={newRoomPass}
+            setRoomPass={setNewRoomPass}
           />
         </div>
       </div>
 
       {/* Left Side */}
 
-      {/* Mid */}
       <Chat selectedRoom={selectedRoom} msgs={content} />
-      {/* Mid Side */}
-
-      {/* Right Side */}
-      <div>Menu Lateral</div>
-      {/* Right Side */}
     </div>
   );
 };

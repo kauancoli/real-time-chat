@@ -29,6 +29,22 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
 
   const roomName = room.filter((r) => r.id === selectedRoom).map((r) => r.name);
 
+  const cleanMessages = async () => {
+    try {
+      const response = await api.get(`messages`);
+
+      const messagesNull = response.data.filter(
+        (msg: Message) => msg.roomId === null
+      );
+
+      messagesNull.forEach(async (msg: Message) => {
+        await api.delete(`messages/${msg.id}`);
+      });
+    } catch (error) {
+      console.error("Erro ao limpar mensagens", error);
+    }
+  };
+
   const getRooms = async () => {
     setLoading(true);
     try {
@@ -105,6 +121,7 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
 
   useEffect(() => {
     getRooms();
+    cleanMessages();
 
     socket.on("view-room", (room) => {
       setRoom((prevRooms) => {
@@ -127,23 +144,14 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
       {selectedRoom ? (
         <div className="navbar bg-background rounded-lg px-8 justify-between cursor-pointer">
           <div>
-            <div className="avatar">
-              <div className="w-10 rounded-full">
-                <img
-                  alt="Tailwind CSS Navbar component"
-                  src="https://daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg"
-                />
-              </div>
+            <div
+              className={`w-10 h-10 font-bold rounded-full text-lg flex justify-center items-center bg-primary`}
+            >
+              {roomName[0].slice(0, 1).toUpperCase() || ""}
             </div>
             <div className="p-4 font-bold text-lg text-white">{roomName}</div>
           </div>
 
-          {/* <div className="p-4 font-bold text-sm text-white">
-          Membros online:
-          {room
-            .filter((r) => r.id === selectedRoom)
-            .map((r) => r.users?.length)}
-          </div> */}
           <div className="flex justify-between">
             <div className="dropdown dropdown-end">
               <div
@@ -188,21 +196,22 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
                   <div className="modal-box">
                     <div className="flex flex-col gap-8">
                       <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-2xl">{roomName}</h3>
-                        <button
-                          className="btn"
-                          onClick={() => changeRoomName(selectedRoom)}
-                        >
-                          Alterar Nome
-                        </button>
+                        <h3 className="font-bold text-2xl">Sala: {roomName}</h3>
                       </div>
 
                       <input
                         type="text"
                         onChange={(e) => setRoomChange(e.target.value)}
-                        className="rounded py-2 px-4 flex-1 mr-2 bg-background text-white focus:outline-none text-sm"
+                        className="rounded py-2 px-4 mt-4 w-full bg-slate-700 text-white focus:outline-none text-sm"
                         placeholder="Digite um novo nome..."
+                        minLength={1}
                       />
+                      <button
+                        className="btn bg-primary hover:bg-primaryHover text-white"
+                        onClick={() => changeRoomName(selectedRoom)}
+                      >
+                        Alterar Nome
+                      </button>
                     </div>
 
                     <div className="modal-action">
@@ -222,7 +231,9 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
         </div>
       ) : (
         <div className="flex justify-center items-center h-screen">
-          <h1 className="text-2xl font-bold text-white">Selecione uma sala</h1>
+          <h1 className="text-2xl font-bold text-white">
+            Bem vindo ao ChatApp, selecione uma Sala!
+          </h1>
         </div>
       )}
 

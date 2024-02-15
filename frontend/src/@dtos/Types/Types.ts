@@ -8,8 +8,9 @@ export type User = {
 export type Room = {
   id: string;
   name: string;
+  userId: string;
+  password?: string;
   messages?: Message[];
-  users?: User[];
 };
 
 export type Message = {
