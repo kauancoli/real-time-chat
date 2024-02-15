@@ -168,10 +168,10 @@ export const Home = () => {
   }, []);
 
   return (
-    <div className="flex flex-row gap-8 p-16 h-screen w-screen">
+    <div className="flex flex-row gap-8 2xl:p-16 xl:p-14 lg:p-12 p-32 h-screen w-screen ">
       {loading && <Loading />}
       {/* Left Side */}
-      <div className="flex flex-col gap-8 p-4 bg-dark rounded-lg">
+      <div className="flex flex-col gap-8 p-4 bg-dark rounded-lg lg:gap-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div

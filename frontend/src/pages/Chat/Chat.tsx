@@ -221,17 +221,13 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
                     </div>
                   </div>
                 </dialog>
-
-                <li>
-                  <a>Sair do Chat</a>
-                </li>
               </ul>
             </div>
           </div>
         </div>
       ) : (
         <div className="flex justify-center items-center h-screen">
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="2xl:text-2xl font-bold text-white xl:text-xl">
             Bem vindo ao ChatApp, selecione uma Sala!
           </h1>
         </div>
@@ -270,8 +266,11 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
                     ? "bg-primary"
                     : "bg-gray-700"
                 }`}
+                style={{ wordWrap: "break-word" }}
               >
-                {message.content}
+                <p className="text-white text-wrap text-sm xl-text-lg">
+                  {message.content}
+                </p>
               </div>
             </div>
           ))}

@@ -7,6 +7,27 @@
       "password": "admin"
     }
   ],
-  "rooms": [],
-  "messages": []
+  "rooms": [
+    {
+      "id": "ba2b3089-3c08-4c7a-ba17-2cd024a5eb8e",
+      "name": "Sala 1",
+      "userId": "1",
+      "password": ""
+    },
+    {
+      "id": "8a8cc57d-31f3-430f-b827-de08551dec7f",
+      "name": "Sala Privada",
+      "userId": "1",
+      "password": "12345"
+    }
+  ],
+  "messages": [
+    {
+      "id": "33c09b04-61c0-4ce6-96b2-f7e9230f4d09",
+      "userName": "admin",
+      "content": "Seja Bem vindo a Sala 1!",
+      "timestamp": "13:30",
+      "roomId": "ba2b3089-3c08-4c7a-ba17-2cd024a5eb8e"
+    }
+  ]
 }
