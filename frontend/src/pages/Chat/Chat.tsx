@@ -2,6 +2,7 @@ import { useSocket } from "@/app/providers/useSocket";
 import { Avatar, Button, Loading } from "@/components";
 import { MessageInput } from "@/components/MessageInput";
 import { useAuth } from "@/features/auth/useAuth";
+import { MessageList } from "@/features/messages/MessageList";
 import { createMessage } from "@/services/api/messages";
 import { getRooms, updateRoom } from "@/services/api/rooms";
 import { Message, Room } from "@/types/domain";
@@ -19,7 +20,6 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
   const [currentMessage, setCurrentMessage] = useState("");
   const [rooms, setRooms] = useState<Room[]>([]);
   const [roomChange, setRoomChange] = useState("");
-
   const messages = useMemo(
     () => [...msgs, ...receivedMessages],
     [msgs, receivedMessages],
@@ -137,30 +137,12 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
           <PencilSimple size={17} /> Renomear
         </Button>
       </header>
-      <div className="message-list">
-        {messages
-          .filter((message) => message.roomId === selectedRoom)
-          .map((message) => {
-            const isMine = message.userName === user.userName;
-            return (
-              <article
-                className={`message ${isMine ? "message--mine" : ""}`}
-                key={message.id}
-              >
-                <div className="message-avatar">
-                  {message.userName.slice(0, 1).toUpperCase()}
-                </div>
-                <div>
-                  <div className="message-meta">
-                    <strong>{isMine ? "Você" : message.userName}</strong>
-                    <time>{message.timestamp}</time>
-                  </div>
-                  <p className="message-bubble">{message.content}</p>
-                </div>
-              </article>
-            );
-          })}
-      </div>
+      <MessageList
+        currentUserName={user.userName}
+        messages={messages.filter((message) => message.roomId === selectedRoom)}
+        roomId={selectedRoom}
+        roomName={activeRoom?.name ?? "sala"}
+      />
       <MessageInput
         msg={currentMessage}
         setMsg={setCurrentMessage}
