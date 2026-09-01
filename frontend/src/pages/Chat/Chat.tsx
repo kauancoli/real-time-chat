@@ -1,288 +1,192 @@
 import { Message, Room } from "@/@dtos";
 import { Loading } from "@/components/Loading";
 import { MessageInput } from "@/components/MessageInput";
-
 import { api } from "@/config";
 import { useAuth, useSocket } from "@/contexts";
-import { useEffect, useState } from "react";
+import { PencilSimple } from "@phosphor-icons/react";
+import { useEffect, useMemo, useState } from "react";
 import { v4 as uuid } from "uuid";
 
-type ChatProps = {
-  selectedRoom: string;
-  msgs: Message[];
-};
+type ChatProps = { selectedRoom: string; msgs: Message[] };
 
 export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
   const { socket } = useSocket();
   const { user } = useAuth();
-
   const [loading, setLoading] = useState(false);
+  const [receivedMessages, setReceivedMessages] = useState<Message[]>([]);
+  const [currentMessage, setCurrentMessage] = useState("");
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [roomChange, setRoomChange] = useState("");
 
-  const [content, setContent] = useState<Message[]>([]);
-  const [currentMessage, setCurrentMessage] = useState<string>("");
-
-  const [room, setRoom] = useState<Room[]>([]);
-  const [roomChange, setRoomChange] = useState<string>("");
-
-  const minutes = new Date(Date.now()).getMinutes();
-  const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-
-  const roomName = room.filter((r) => r.id === selectedRoom).map((r) => r.name);
-
-  const cleanMessages = async () => {
-    try {
-      const response = await api.get(`messages`);
-
-      const messagesNull = response.data.filter(
-        (msg: Message) => msg.roomId === null
-      );
-
-      messagesNull.forEach(async (msg: Message) => {
-        await api.delete(`messages/${msg.id}`);
-      });
-    } catch (error) {
-      console.error("Erro ao limpar mensagens", error);
-    }
-  };
+  const messages = useMemo(
+    () => [...msgs, ...receivedMessages],
+    [msgs, receivedMessages],
+  );
+  const activeRoom = rooms.find((room) => room.id === selectedRoom);
 
   const getRooms = async () => {
     setLoading(true);
     try {
       const { data } = await api.get("rooms");
-
-      setRoom(data);
-      setLoading(false);
-      return data;
+      setRooms(data);
     } catch (error) {
       console.error("Erro ao buscar salas", error);
+    } finally {
       setLoading(false);
     }
   };
 
-  const changeRoomName = async (roomId: string) => {
+  const changeRoomName = async () => {
+    if (!roomChange.trim() || !activeRoom) return;
     try {
-      if (roomChange !== "") {
-        const updatedRoom = await api.put(`rooms/${roomId}`, {
-          id: roomId,
-          name: roomChange,
-        });
-
-        setRoom((prevRooms) =>
-          prevRooms.map((r) =>
-            r.id === roomId ? { ...r, name: updatedRoom.data.name } : r
-          )
-        );
-
-        socket.emit("update-room", updatedRoom.data);
-      }
+      const { data } = await api.put(`rooms/${activeRoom.id}`, {
+        ...activeRoom,
+        name: roomChange.trim(),
+      });
+      setRooms((current) =>
+        current.map((room) => (room.id === data.id ? data : room)),
+      );
+      socket.emit("update-room", data);
+      setRoomChange("");
+      (document.getElementById("rename-room") as HTMLDialogElement).close();
     } catch (error) {
-      console.error("Erro ao buscar salas", error);
+      console.error("Erro ao alterar a sala", error);
     }
   };
 
   const handleMessageSubmit = async (
-    event: React.FormEvent<HTMLFormElement>
+    event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
-
+    if (!currentMessage.trim() || !selectedRoom) return;
+    const now = new Date();
     setLoading(true);
     try {
-      const response = await api.post("messages", {
+      const { data } = await api.post("messages", {
         id: uuid(),
         userName: user.userName,
-        content: currentMessage,
-        timestamp: `${new Date(Date.now()).getHours()}:${formattedMinutes}`,
+        content: currentMessage.trim(),
+        timestamp: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
         roomId: selectedRoom,
       });
-
-      const msg: Message = response.data;
-      socket.emit("message", msg);
+      socket.emit("message", data);
       setCurrentMessage("");
-      setLoading(false);
     } catch (error) {
+      console.error("Erro ao enviar mensagem", error);
+    } finally {
       setLoading(false);
-      console.error("Erro ao enviar a mensagem", error);
     }
   };
 
   useEffect(() => {
-    socket.on("msg-received", (msg) => {
-      setContent((prev) => [...prev, msg]);
-    });
-
+    const onMessage = (message: Message) =>
+      setReceivedMessages((current) =>
+        current.some((item) => item.id === message.id)
+          ? current
+          : [...current, message],
+      );
+    const onRoom = (room: Room) =>
+      setRooms((current) =>
+        current.map((item) =>
+          item.id === room.id ? { ...item, ...room } : item,
+        ),
+      );
+    socket.on("msg-received", onMessage);
+    socket.on("view-room", onRoom);
     return () => {
-      socket.off("msg-received");
+      socket.off("msg-received", onMessage);
+      socket.off("view-room", onRoom);
     };
   }, [socket]);
 
   useEffect(() => {
-    setContent(msgs);
-  }, [msgs]);
+    void getRooms();
+  }, []);
 
-  useEffect(() => {
-    getRooms();
-    cleanMessages();
-
-    socket.on("view-room", (room) => {
-      setRoom((prevRooms) => {
-        if (!prevRooms.some((r) => r.id === room.id)) {
-          return [...prevRooms, room];
-        }
-        return prevRooms;
-      });
-    });
-
-    return () => {
-      socket.off("view-room");
-    };
-  }, [socket]);
+  if (!selectedRoom)
+    return (
+      <section className="chat-panel chat-empty">
+        <div className="empty-orb">✦</div>
+        <p className="eyebrow">Chat em tempo real</p>
+        <h1>Escolha uma sala para começar</h1>
+        <span>Suas conversas aparecerão aqui, sem distrações.</span>
+      </section>
+    );
 
   return (
-    <div className="flex flex-1 flex-col justify-between p-4 bg-slate-800 rounded-lg">
+    <section className="chat-panel">
       {loading && <Loading />}
-
-      {selectedRoom ? (
-        <div className="navbar bg-background rounded-lg px-8 justify-between cursor-pointer">
+      <header className="chat-header">
+        <div className="room-title">
+          <div className="avatar avatar--room">
+            {activeRoom?.name.slice(0, 1).toUpperCase()}
+          </div>
           <div>
-            <div
-              className={`w-10 h-10 font-bold rounded-full text-lg flex justify-center items-center bg-primary`}
-            >
-              {roomName[0].slice(0, 1).toUpperCase() || ""}
-            </div>
-            <div className="p-4 font-bold text-lg text-white">{roomName}</div>
-          </div>
-
-          <div className="flex justify-between">
-            <div className="dropdown dropdown-end">
-              <div
-                tabIndex={0}
-                role="button"
-                className="btn btn-ghost btn-circle"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  className="inline-block w-5 h-5 stroke-current"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
-                  ></path>
-                </svg>
-              </div>
-              <ul
-                tabIndex={0}
-                className="menu menu-sm dropdown-content mt-2 z-[1] p-2 shadow bg-base-100 rounded-box w-32"
-              >
-                <li>
-                  <a
-                    className="p-2"
-                    onClick={() =>
-                      (
-                        document.getElementById(
-                          `room-modal-${selectedRoom}`
-                        ) as HTMLDialogElement
-                      ).showModal()
-                    }
-                  >
-                    Alterar Nome
-                  </a>
-                </li>
-
-                <dialog id={`room-modal-${selectedRoom}`} className="modal">
-                  <div className="modal-box">
-                    <div className="flex flex-col gap-8">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-2xl">Sala: {roomName}</h3>
-                      </div>
-
-                      <input
-                        type="text"
-                        onChange={(e) => setRoomChange(e.target.value)}
-                        className="rounded py-2 px-4 mt-4 w-full bg-slate-700 text-white focus:outline-none text-sm"
-                        placeholder="Digite um novo nome..."
-                        minLength={1}
-                      />
-                      <button
-                        className="btn bg-primary hover:bg-primaryHover text-white"
-                        onClick={() => changeRoomName(selectedRoom)}
-                      >
-                        Alterar Nome
-                      </button>
-                    </div>
-
-                    <div className="modal-action">
-                      <form method="dialog">
-                        <button className="btn">Fechar</button>
-                      </form>
-                    </div>
-                  </div>
-                </dialog>
-              </ul>
-            </div>
+            <span className="eyebrow">Sala ativa</span>
+            <h1>{activeRoom?.name ?? "Carregando..."}</h1>
           </div>
         </div>
-      ) : (
-        <div className="flex justify-center items-center h-screen">
-          <h1 className="2xl:text-2xl font-bold text-white xl:text-xl">
-            Bem vindo ao ChatApp, selecione uma Sala!
-          </h1>
-        </div>
-      )}
-
-      <div className="flex-1 overflow-y-auto px-16 py-4 mt-5">
-        {content
+        <button
+          className="button button--ghost button--compact"
+          onClick={() =>
+            (
+              document.getElementById("rename-room") as HTMLDialogElement
+            ).showModal()
+          }
+        >
+          <PencilSimple size={17} /> Renomear
+        </button>
+      </header>
+      <div className="message-list">
+        {messages
           .filter((message) => message.roomId === selectedRoom)
-          .map((message, index) => (
-            <div
-              key={index}
-              className={`chat ${
-                message.userName === user.userName ? "chat-start" : "chat-end"
-              }`}
-            >
-              <div className={`chat-image`}>
-                <div
-                  className={`w-10 h-10 font-bold rounded-full text-lg flex justify-center items-center ${
-                    message.userName === user.userName
-                      ? "bg-primary"
-                      : "bg-gray-700"
-                  }`}
-                >
+          .map((message) => {
+            const isMine = message.userName === user.userName;
+            return (
+              <article
+                className={`message ${isMine ? "message--mine" : ""}`}
+                key={message.id}
+              >
+                <div className="message-avatar">
                   {message.userName.slice(0, 1).toUpperCase()}
                 </div>
-              </div>
-
-              <div className="chat-header flex gap-2 items-center">
-                {message.userName}
-                <time className="text-xs opacity-50">{message.timestamp}</time>
-              </div>
-
-              <div
-                className={`chat-bubble ${
-                  message.userName === user.userName
-                    ? "bg-primary"
-                    : "bg-gray-700"
-                }`}
-                style={{ wordWrap: "break-word" }}
-              >
-                <p className="text-white text-wrap text-sm xl-text-lg">
-                  {message.content}
-                </p>
-              </div>
-            </div>
-          ))}
+                <div>
+                  <div className="message-meta">
+                    <strong>{isMine ? "Você" : message.userName}</strong>
+                    <time>{message.timestamp}</time>
+                  </div>
+                  <p className="message-bubble">{message.content}</p>
+                </div>
+              </article>
+            );
+          })}
       </div>
-      {selectedRoom && (
-        <MessageInput
-          msg={currentMessage}
-          setMsg={setCurrentMessage}
-          handleMessageSubmit={handleMessageSubmit}
-          roomId={selectedRoom}
-        />
-      )}
-    </div>
+      <MessageInput
+        msg={currentMessage}
+        setMsg={setCurrentMessage}
+        handleMessageSubmit={handleMessageSubmit}
+        roomId={selectedRoom}
+      />
+      <dialog id="rename-room" className="app-dialog">
+        <div className="dialog-card">
+          <h3>Renomear sala</h3>
+          <p>Dê um nome claro para a conversa.</p>
+          <input
+            className="app-input"
+            value={roomChange}
+            onChange={(event) => setRoomChange(event.target.value)}
+            placeholder={activeRoom?.name}
+          />
+          <div className="dialog-actions">
+            <button className="button button--primary" onClick={changeRoomName}>
+              Salvar
+            </button>
+            <form method="dialog">
+              <button className="button button--ghost">Cancelar</button>
+            </form>
+          </div>
+        </div>
+      </dialog>
+    </section>
   );
 };

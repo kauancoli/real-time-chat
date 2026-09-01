@@ -1,9 +1,9 @@
-import { PaperPlaneTilt } from "phosphor-react";
+import { PaperPlaneTilt } from "@phosphor-icons/react";
 
-type MessageInput = {
+type MessageInputProps = {
   msg: string;
   setMsg: (value: string) => void;
-  handleMessageSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  handleMessageSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   roomId: string;
 };
 
@@ -12,22 +12,22 @@ export function MessageInput({
   setMsg,
   handleMessageSubmit,
   roomId,
-}: MessageInput) {
+}: MessageInputProps) {
   return (
-    <form
-      className="flex items-center bg-dark py-2 px-4 rounded-2xl shadow-lg"
-      onSubmit={handleMessageSubmit}
-    >
+    <form className="message-composer" onSubmit={handleMessageSubmit}>
       <input
-        type="text"
         value={msg}
         disabled={!roomId}
-        placeholder="Digite uma mensagem..."
-        onChange={(e) => setMsg(e.target.value)}
-        className="rounded py-2 px-4 flex-1 mr-2 bg-transparent text-white focus:outline-none text-sm"
+        onChange={(event) => setMsg(event.target.value)}
+        placeholder="Escreva uma mensagem..."
+        aria-label="Mensagem"
       />
-      <button className="p-2 rounded" disabled={!roomId || !msg}>
-        <PaperPlaneTilt color="#615EF0" size={24} />
+      <button
+        className="send-button"
+        disabled={!roomId || !msg.trim()}
+        aria-label="Enviar mensagem"
+      >
+        <PaperPlaneTilt size={20} weight="fill" />
       </button>
     </form>
   );

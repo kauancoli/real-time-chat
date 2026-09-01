@@ -27,7 +27,7 @@ export const Login: React.FC = () => {
     setLoading(true);
     try {
       const response = await api.get(
-        `users?userName=${data.name}&password=${data.password}`
+        `users?userName=${data.name}&password=${data.password}`,
       );
 
       const userData = response.data[0];

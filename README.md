@@ -3,7 +3,8 @@
 Este é um aplicativo de mensagens de texto em tempo real, desenvolvido com Node.js, Socket.IO, React.js e Json-Server.
 
 ## Deploy
-  - https://real-time-chat-kauancoli.vercel.app/
+
+- https://real-time-chat-kauancoli.vercel.app/
 
 - **Ferramentas para Deploy:**
   - Vercel (frontend)
@@ -29,14 +30,14 @@ Este é um aplicativo de mensagens de texto em tempo real, desenvolvido com Node
 
 - **Tecnologias Utilizadas:**
   - Frontend:
-    - Vite 
+    - Vite
     - React.js
     - TypeScript
     - Socket.io-Client
     - DaisyUI
     - TailwindCSS
     - Phosphor-react
-      
+
   - Backend:
     - Socket.io
     - Node.js

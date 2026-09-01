@@ -1,11 +1,5 @@
 import { User } from "@/@dtos";
-import React, {
-  ReactNode,
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { ReactNode, createContext, useContext, useState } from "react";
 
 type AuthContextType = {
   user: Omit<User, "password"> | null;
@@ -17,14 +11,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<Omit<User, "password"> | null>(null);
-
-  useEffect(() => {
+  const [user, setUser] = useState<Omit<User, "password"> | null>(() => {
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
 
   const updateUser = (newUser: Omit<User, "password"> | null) => {
     setUser(newUser);

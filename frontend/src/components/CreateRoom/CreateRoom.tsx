@@ -1,45 +1,45 @@
-type CreateRoom = {
+import { Plus } from "@phosphor-icons/react";
+
+type CreateRoomProps = {
   roomName: string;
   setRoomName: (value: string) => void;
   roomPass?: string;
   setRoomPass?: (value: string) => void;
-  handleCreateRoom: (e: React.FormEvent<HTMLFormElement>) => void;
+  handleCreateRoom: (event: React.FormEvent<HTMLFormElement>) => void;
 };
 
 export function CreateRoom({
+  roomName,
+  roomPass,
   setRoomName,
   setRoomPass,
   handleCreateRoom,
-  roomName,
-  roomPass,
-}: CreateRoom) {
+}: CreateRoomProps) {
   return (
-    <form onSubmit={handleCreateRoom}>
-      <div>
-        <input
-          type="text"
-          value={roomName}
-          placeholder="Nome da nova sala"
-          onChange={(e) => setRoomName(e.target.value)}
-          className="rounded py-3 px-2 bg-transparent text-white focus:outline-none border border-background text-sm"
-        />
-
-        <input
-          type="text"
-          value={roomPass}
-          onChange={(e) => setRoomPass(e.target.value)}
-          placeholder="Senha (opcional)"
-          className="rounded py-3 px-4 mr-2 bg-transparent text-white focus:outline-none border border-background text-sm"
-          maxLength={5}
-        />
+    <form className="create-room" onSubmit={handleCreateRoom}>
+      <div className="section-heading">
+        <span>Nova sala</span>
       </div>
-
+      <input
+        className="app-input"
+        value={roomName}
+        onChange={(event) => setRoomName(event.target.value)}
+        placeholder="Nome da sala"
+      />
+      <input
+        className="app-input"
+        type="password"
+        value={roomPass}
+        onChange={(event) => setRoomPass?.(event.target.value)}
+        placeholder="Senha (opcional)"
+        maxLength={32}
+      />
       <button
+        className="button button--primary create-room-button"
         type="submit"
-        className="btn bg-primary hover:bg-primaryHover mt-2"
-        disabled={!roomName}
+        disabled={!roomName.trim()}
       >
-        Criar Sala
+        <Plus size={18} /> Criar sala
       </button>
     </form>
   );

@@ -9,5 +9,5 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <Layout>
       <Router />
     </Layout>
-  </AuthProvider>
+  </AuthProvider>,
 );

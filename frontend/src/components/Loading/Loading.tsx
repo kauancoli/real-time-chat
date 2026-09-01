@@ -25,6 +25,6 @@ export function Loading() {
       </svg>
     </div>,
 
-    document.body
+    document.body,
   );
 }

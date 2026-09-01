@@ -1,17 +1,13 @@
 import { SocketConnect, SocketProvider, useAuth } from "@/contexts";
-import { Home, Login, Register } from "@/pages";
-import React, { useEffect, useState } from "react";
+import { Home, Login } from "@/pages";
+import React from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 export const Router: React.FC = () => {
   const socket = SocketConnect;
 
   const { user } = useAuth();
-  const [isLoggedIn, setIsLoggedIn] = useState(Boolean(user));
-
-  useEffect(() => {
-    setIsLoggedIn(Boolean(user));
-  }, [user]);
+  const isLoggedIn = Boolean(user);
 
   return (
     <SocketProvider socket={socket}>
