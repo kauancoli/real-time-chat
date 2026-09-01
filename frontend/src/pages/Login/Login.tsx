@@ -1,7 +1,7 @@
-import { FormData } from "@/@dtos";
 import { Loading } from "@/components";
-import { api } from "@/config";
-import { useAuth } from "@/contexts";
+import { AuthFormData, AuthView } from "@/features/auth/types";
+import { useAuth } from "@/features/auth/useAuth";
+import { getUsersByCredentials } from "@/services/api/auth";
 import React, { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -12,25 +12,23 @@ export const Login: React.FC = () => {
   const { setUser } = useAuth();
   const navigate = useNavigate();
 
-  const [tabs, setTabs] = useState<string>("Login");
+  const [tabs, setTabs] = useState<AuthView>("Login");
 
   const {
     register,
     handleSubmit,
     formState: { errors, isValid },
-  } = useForm<FormData>({ mode: "onChange" });
+  } = useForm<AuthFormData>({ mode: "onChange" });
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const onSubmit: SubmitHandler<FormData> = async (data, e) => {
+  const onSubmit: SubmitHandler<AuthFormData> = async (data, e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await api.get(
-        `users?userName=${data.name}&password=${data.password}`,
-      );
-
-      const userData = response.data[0];
+      const userData = (
+        await getUsersByCredentials(data.name, data.password)
+      )[0];
       if (userData) {
         setUser({
           id: userData.id,

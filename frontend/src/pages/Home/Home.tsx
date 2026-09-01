@@ -1,7 +1,12 @@
-import { Message, Room } from "@/@dtos";
-import { CreateRoom, Loading } from "@/components";
-import { api } from "@/config";
-import { useAuth, useSocket } from "@/contexts";
+import { useSocket } from "@/app/providers/useSocket";
+import { Avatar, CreateRoom, IconButton, Loading } from "@/components";
+import { useAuth } from "@/features/auth/useAuth";
+import {
+  createRoom,
+  deleteRoom,
+  getRoomsWithMessages,
+} from "@/services/api/rooms";
+import { Message, Room } from "@/types/domain";
 import {
   ChatCircleDots,
   Lock,
@@ -15,7 +20,7 @@ import { Chat } from "../Chat";
 
 export const Home = () => {
   const { socket } = useSocket();
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
   const [newRoomPass, setNewRoomPass] = useState("");
@@ -35,9 +40,9 @@ export const Home = () => {
   const getRoomMessages = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("rooms?_embed=messages");
-      setRooms(data);
-      setContent(data.flatMap((room: Room) => room.messages ?? []));
+      const roomsWithMessages = await getRoomsWithMessages();
+      setRooms(roomsWithMessages);
+      setContent(roomsWithMessages.flatMap((room) => room.messages ?? []));
     } catch (error) {
       console.error("Erro ao buscar salas", error);
     } finally {
@@ -46,7 +51,7 @@ export const Home = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    setUser(null);
     window.location.reload();
   };
 
@@ -55,7 +60,7 @@ export const Home = () => {
     if (!newRoomName.trim()) return;
     setLoading(true);
     try {
-      const { data: room } = await api.post("rooms", {
+      const room = await createRoom({
         id: uuid(),
         name: newRoomName.trim(),
         userId: user.id,
@@ -74,7 +79,7 @@ export const Home = () => {
   const handleDeleteRoom = async (roomId: string) => {
     setLoading(true);
     try {
-      await api.delete(`rooms/${roomId}`);
+      await deleteRoom(roomId);
       socket.emit("delete-room", roomId);
       setRooms((current) => current.filter((room) => room.id !== roomId));
       if (selectedRoom === roomId) setSelectedRoom("");
@@ -134,20 +139,18 @@ export const Home = () => {
       <aside className="sidebar">
         <header className="sidebar-header">
           <div className="profile-summary">
-            <div className="avatar avatar--primary">
-              {user.userName.slice(0, 1).toUpperCase()}
-            </div>
+            <Avatar name={user.userName} className="avatar--primary" />
             <div className="profile-copy">
               <span>Seu espaço</span>
               <strong title={user.userName}>{user.userName}</strong>
             </div>
           </div>
-          <button className="icon-button" onClick={handleLogout} title="Sair">
+          <IconButton aria-label="Sair" onClick={handleLogout}>
             <SignOut size={20} />
-          </button>
+          </IconButton>
         </header>
 
-        <label className="room-search">
+        <label className="room-search" aria-label="Buscar salas">
           <MagnifyingGlass size={19} />
           <input
             value={search}
@@ -175,9 +178,7 @@ export const Home = () => {
                   className="room-select"
                   onClick={() => handleRoomClick(room)}
                 >
-                  <div className="avatar room-avatar">
-                    {room.name.slice(0, 1).toUpperCase()}
-                  </div>
+                  <Avatar name={room.name} className="room-avatar" />
                   <span className="room-name">{room.name}</span>
                   {room.userId === user.id && (
                     <span className="room-owner">★</span>
@@ -185,9 +186,9 @@ export const Home = () => {
                   {room.password && <Lock className="room-lock" size={15} />}
                 </button>
                 {canDelete && (
-                  <button
+                  <IconButton
                     className="room-delete"
-                    title={`Excluir ${room.name}`}
+                    aria-label={`Excluir ${room.name}`}
                     onClick={() =>
                       (
                         document.getElementById(
@@ -197,7 +198,7 @@ export const Home = () => {
                     }
                   >
                     <Trash size={17} />
-                  </button>
+                  </IconButton>
                 )}
                 <dialog id={`modal-${room.id}`} className="app-dialog">
                   <div className="dialog-card">

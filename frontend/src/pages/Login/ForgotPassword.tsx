@@ -1,36 +1,43 @@
-import { FormData, Tabs } from "@/@dtos";
-import { api } from "@/config";
-import { useState } from "react";
+import { AuthFormData, AuthView } from "@/features/auth/types";
+import {
+  getUsersByEmail,
+  getUsersByUserName,
+  updateUser,
+} from "@/services/api/auth";
+import { Dispatch, SetStateAction, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 
-export const ForgotPassword = ({ setTabs }: Tabs) => {
+export const ForgotPassword = ({
+  setTabs,
+}: {
+  setTabs: Dispatch<SetStateAction<AuthView>>;
+}) => {
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isValid },
-  } = useForm<FormData>({ mode: "onChange" });
+  } = useForm<AuthFormData>({ mode: "onChange" });
 
   const [error, setError] = useState<string | null>(null);
   const [sucess, setSucess] = useState<string | null>(null);
 
-  const onSubmit: SubmitHandler<FormData> = async (data) => {
+  const onSubmit: SubmitHandler<AuthFormData> = async (data) => {
     try {
-      const userResponse = await api.get(`users?userName=${data.name}`);
-      if (userResponse.data.length === 0) {
+      const usersByName = await getUsersByUserName(data.name);
+      if (usersByName.length === 0) {
         setError("Nome de usuário não existe");
         return;
       }
 
-      const emailResponse = await api.get(`users?email=${data.email}`);
-      if (emailResponse.data.length === 0) {
+      if ((await getUsersByEmail(data.email ?? "")).length === 0) {
         setError("E-mail não existe");
         return;
       }
 
-      const userId = userResponse.data[0].id;
+      const userId = usersByName[0].id;
 
-      await api.put(`users/${userId}`, {
+      await updateUser(userId, {
         email: data.email,
         userName: data.name,
         password: data.password,

@@ -1,4 +1,5 @@
 import { Plus } from "@phosphor-icons/react";
+import { Button, Input } from "@/components/ui";
 
 type CreateRoomProps = {
   roomName: string;
@@ -20,27 +21,27 @@ export function CreateRoom({
       <div className="section-heading">
         <span>Nova sala</span>
       </div>
-      <input
-        className="app-input"
+      <Input
+        label="Nome da sala"
         value={roomName}
         onChange={(event) => setRoomName(event.target.value)}
         placeholder="Nome da sala"
       />
-      <input
-        className="app-input"
+      <Input
+        label="Senha da sala"
         type="password"
         value={roomPass}
         onChange={(event) => setRoomPass?.(event.target.value)}
         placeholder="Senha (opcional)"
         maxLength={32}
       />
-      <button
-        className="button button--primary create-room-button"
+      <Button
+        className="create-room-button"
         type="submit"
         disabled={!roomName.trim()}
       >
         <Plus size={18} /> Criar sala
-      </button>
+      </Button>
     </form>
   );
 }

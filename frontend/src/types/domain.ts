@@ -5,6 +5,8 @@ export type User = {
   password: string;
 };
 
+export type AuthenticatedUser = Omit<User, "password">;
+
 export type Room = {
   id: string;
   name: string;

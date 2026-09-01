@@ -8,8 +8,19 @@
 }
 
 :root {
+  --surface: #151826;
+  --surface-subtle: #10131f;
+  --surface-hover: #202438;
+  --surface-active: #292b4a;
+  --border: #292d42;
+  --text-primary: #edf0ff;
+  --text-secondary: #b7bed6;
+  --text-muted: #858ca8;
+  --accent: #7565ed;
+  --accent-hover: #6251d8;
+  --danger: #c44255;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  color: #edf0ff;
+  color: var(--text-primary);
   background: #090b12;
   font-synthesis: none;
 }
@@ -37,24 +48,19 @@ button:disabled {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 332px minmax(0, 1fr);
-  gap: 18px;
-  min-height: 100vh;
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 18px;
+  grid-template-columns: 296px minmax(0, 1fr);
+  width: 100vw;
+  height: 100dvh;
 }
 .sidebar,
 .chat-panel {
-  background: rgba(18, 21, 34, 0.9);
-  border: 1px solid #292d42;
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.25);
+  background: var(--surface);
 }
 .sidebar {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 36px);
-  border-radius: 22px;
+  min-height: 0;
+  border-right: 1px solid var(--border);
   padding: 18px;
 }
 .sidebar-header,
@@ -132,8 +138,8 @@ button:disabled {
   gap: 9px;
   padding: 0 12px;
   height: 44px;
-  background: #10131f;
-  border: 1px solid #292d42;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
   border-radius: 12px;
   color: #858ca8;
 }
@@ -190,12 +196,12 @@ button:disabled {
   transition: 0.18s ease;
 }
 .room-item:hover {
-  background: #202438;
+  background: var(--surface-hover);
 }
 .room-item--active {
-  border-color: #7567e8;
-  background: linear-gradient(100deg, #38317d, #27264a);
-  box-shadow: inset 3px 0 #a69cff;
+  border-color: transparent;
+  background: var(--surface-active);
+  box-shadow: inset 3px 0 var(--accent);
 }
 .room-select {
   min-width: 0;
@@ -314,8 +320,7 @@ button:disabled {
 .chat-panel {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 36px);
-  border-radius: 22px;
+  min-height: 0;
   overflow: hidden;
 }
 .chat-header {
@@ -325,8 +330,8 @@ button:disabled {
   gap: 16px;
   min-height: 86px;
   padding: 17px 24px;
-  border-bottom: 1px solid #292d42;
-  background: #151826cc;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
 }
 .room-title {
   gap: 12px;
@@ -495,12 +500,12 @@ button:disabled {
 @media (max-width: 780px) {
   .app-shell {
     grid-template-columns: 1fr;
-    padding: 10px;
+    height: auto;
+    min-height: 100dvh;
   }
   .sidebar,
   .chat-panel {
     min-height: auto;
-    border-radius: 17px;
   }
   .sidebar {
     max-height: 48vh;

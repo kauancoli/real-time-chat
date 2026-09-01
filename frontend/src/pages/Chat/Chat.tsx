@@ -1,8 +1,10 @@
-import { Message, Room } from "@/@dtos";
-import { Loading } from "@/components/Loading";
+import { useSocket } from "@/app/providers/useSocket";
+import { Avatar, Button, Loading } from "@/components";
 import { MessageInput } from "@/components/MessageInput";
-import { api } from "@/config";
-import { useAuth, useSocket } from "@/contexts";
+import { useAuth } from "@/features/auth/useAuth";
+import { createMessage } from "@/services/api/messages";
+import { getRooms, updateRoom } from "@/services/api/rooms";
+import { Message, Room } from "@/types/domain";
 import { PencilSimple } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
 import { v4 as uuid } from "uuid";
@@ -24,11 +26,10 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
   );
   const activeRoom = rooms.find((room) => room.id === selectedRoom);
 
-  const getRooms = async () => {
+  const loadRooms = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("rooms");
-      setRooms(data);
+      setRooms(await getRooms());
     } catch (error) {
       console.error("Erro ao buscar salas", error);
     } finally {
@@ -39,7 +40,7 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
   const changeRoomName = async () => {
     if (!roomChange.trim() || !activeRoom) return;
     try {
-      const { data } = await api.put(`rooms/${activeRoom.id}`, {
+      const data = await updateRoom(activeRoom.id, {
         ...activeRoom,
         name: roomChange.trim(),
       });
@@ -62,7 +63,7 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
     const now = new Date();
     setLoading(true);
     try {
-      const { data } = await api.post("messages", {
+      const data = await createMessage({
         id: uuid(),
         userName: user.userName,
         content: currentMessage.trim(),
@@ -100,7 +101,7 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
   }, [socket]);
 
   useEffect(() => {
-    void getRooms();
+    void loadRooms();
   }, []);
 
   if (!selectedRoom)
@@ -118,16 +119,15 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
       {loading && <Loading />}
       <header className="chat-header">
         <div className="room-title">
-          <div className="avatar avatar--room">
-            {activeRoom?.name.slice(0, 1).toUpperCase()}
-          </div>
+          <Avatar name={activeRoom?.name ?? "?"} className="avatar--room" />
           <div>
             <span className="eyebrow">Sala ativa</span>
             <h1>{activeRoom?.name ?? "Carregando..."}</h1>
           </div>
         </div>
-        <button
-          className="button button--ghost button--compact"
+        <Button
+          variant="ghost"
+          className="button--compact"
           onClick={() =>
             (
               document.getElementById("rename-room") as HTMLDialogElement
@@ -135,7 +135,7 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
           }
         >
           <PencilSimple size={17} /> Renomear
-        </button>
+        </Button>
       </header>
       <div className="message-list">
         {messages
@@ -173,16 +173,15 @@ export const Chat = ({ selectedRoom, msgs }: ChatProps) => {
           <p>Dê um nome claro para a conversa.</p>
           <input
             className="app-input"
+            aria-label="Novo nome da sala"
             value={roomChange}
             onChange={(event) => setRoomChange(event.target.value)}
             placeholder={activeRoom?.name}
           />
           <div className="dialog-actions">
-            <button className="button button--primary" onClick={changeRoomName}>
-              Salvar
-            </button>
+            <Button onClick={changeRoomName}>Salvar</Button>
             <form method="dialog">
-              <button className="button button--ghost">Cancelar</button>
+              <Button variant="ghost">Cancelar</Button>
             </form>
           </div>
         </div>

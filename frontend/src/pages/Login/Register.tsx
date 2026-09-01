@@ -1,35 +1,41 @@
-import { FormData, Tabs } from "@/@dtos";
-import { api } from "@/config";
-import { useState } from "react";
+import { AuthFormData, AuthView } from "@/features/auth/types";
+import {
+  createUser,
+  getUsersByEmail,
+  getUsersByUserName,
+} from "@/services/api/auth";
+import { Dispatch, SetStateAction, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { v4 as uuid } from "uuid";
 
-export const Register = ({ setTabs }: Tabs) => {
+export const Register = ({
+  setTabs,
+}: {
+  setTabs: Dispatch<SetStateAction<AuthView>>;
+}) => {
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isValid },
-  } = useForm<FormData>({ mode: "onChange" });
+  } = useForm<AuthFormData>({ mode: "onChange" });
 
   const [error, setError] = useState<string | null>(null);
   const [sucess, setSucess] = useState<string | null>(null);
 
-  const onSubmit: SubmitHandler<FormData> = async (data) => {
+  const onSubmit: SubmitHandler<AuthFormData> = async (data) => {
     try {
-      const userResponse = await api.get(`users?userName=${data.name}`);
-      if (userResponse.data.length > 0) {
+      if ((await getUsersByUserName(data.name)).length > 0) {
         setError("Nome de usuário já cadastrado");
         return;
       }
 
-      const emailResponse = await api.get(`users?email=${data.email}`);
-      if (emailResponse.data.length > 0) {
+      if ((await getUsersByEmail(data.email ?? "")).length > 0) {
         setError("E-mail já cadastrado");
         return;
       }
 
-      await api.post(`users`, {
+      await createUser({
         id: uuid(),
         email: data.email,
         userName: data.name,

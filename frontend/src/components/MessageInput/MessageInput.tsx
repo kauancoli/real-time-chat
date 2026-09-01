@@ -1,4 +1,5 @@
 import { PaperPlaneTilt } from "@phosphor-icons/react";
+import { IconButton } from "@/components/ui";
 
 type MessageInputProps = {
   msg: string;
@@ -22,13 +23,13 @@ export function MessageInput({
         placeholder="Escreva uma mensagem..."
         aria-label="Mensagem"
       />
-      <button
+      <IconButton
         className="send-button"
         disabled={!roomId || !msg.trim()}
         aria-label="Enviar mensagem"
       >
         <PaperPlaneTilt size={20} weight="fill" />
-      </button>
+      </IconButton>
     </form>
   );
 }
